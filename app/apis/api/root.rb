@@ -3,6 +3,7 @@ class API::Root < Grape::API
 
   prefix :api
   mount API::V1::Root
+  mount API::V1::Messages
 
   # 健康检查
   get :healthz do
