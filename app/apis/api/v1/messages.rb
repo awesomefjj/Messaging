@@ -1,6 +1,9 @@
 class API::V1::Messages < Grape::API
   helpers API::CommonHelpers
   resources :messages do
+    before do
+      params[:receiver_type] = params[:receiver_type].classify
+    end
     desc '创建消息'
     params do
       requires :receiver_type, type: String, desc: '接收方类型'

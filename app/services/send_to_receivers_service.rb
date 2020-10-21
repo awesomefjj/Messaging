@@ -28,7 +28,8 @@ class SendToReceiversService
       title: event.title,
       redirect_url: event.redirect_url,
       content: event.content,
-      event_id: event.id
+      event_id: event.id,
+      extra_data: event.extra_data
     )
   end
 end
