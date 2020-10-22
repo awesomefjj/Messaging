@@ -5,3 +5,9 @@
 #
 #   movies = Movie.create([{ name: 'Star Wars' }, { name: 'Lord of the Rings' }])
 #   Character.create(name: 'Luke', movie: movies.first)
+
+apps_name = %i[desk api ping app]
+apps_name.each do |name|
+  app = App.find_or_initialize_by(name: name)
+  app.save
+end
