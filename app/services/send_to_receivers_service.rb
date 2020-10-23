@@ -1,4 +1,5 @@
 class SendToReceiversService
+  attr_reader :event
   def initialize(kind:, title:, content: nil, redirect_url: nil, extra_data: nil)
     @event_params = {
       kind: kind,
@@ -10,19 +11,15 @@ class SendToReceiversService
     @event = Tmdomain::Notifications.create_event(@event_params)
   end
 
-  def receiver_to(receiver_type, receiver_ids, tenant_id, push_platforms: [])
+  def receiver_to(receiver_type, receiver_ids, tenant_id)
     receiver_ids.each do |receiver_id|
       send_to_receiver(receiver_type, receiver_id, tenant_id)
-    end
-    platforms = push_platforms.to_a & Push::SUPPORT_PLATFORMS
-    platforms.each do |platform|
-      AppPushWorker.perform_async(event.id, receiver_ids) if platform == 'APP'
     end
   end
 
   private
 
-  attr_reader :event_params, :event, :tenant_id
+  attr_reader :event_params, :tenant_id
 
   def send_to_receiver(receiver_type, receiver_id, tenant_id = nil)
     Tmdomain::Notifications.notify(

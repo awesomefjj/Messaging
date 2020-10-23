@@ -15,12 +15,15 @@ class API::V1::Messages < Grape::API
       optional :tenant_id, type: String, desc: '站点ID（暂时只有desk使用该属性）'
       optional :redirect_url, type: String, desc: '消息地址'
       optional :extra_data, type: JSON, desc: '其他数据'
-      optional :push_platforms, type: Array[String], desc: '推送至第三方平台（目前只支持app）'
+      optional :registration_ids, type: Array[String], desc: '推送至APP的指定用户'
     end
     post do
       event_params = params.slice(:kind, :title, :content, :redirect_url, :extra_data)
       service = SendToReceiversService.new(**event_params.symbolize_keys)
-      service.receiver_to(params[:receiver_type], params[:receiver_ids], params[:tenant_id], push_platforms: params[:push_platforms])
+      service.receiver_to(params[:receiver_type], params[:receiver_ids], params[:tenant_id])
+      if params[:registration_ids].present?
+        AppPushWorker.perform_async(service.event.id, params[:registration_ids])
+      end
       success!
     end
 
