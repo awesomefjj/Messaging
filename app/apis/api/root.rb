@@ -4,7 +4,6 @@ class API::Root < Grape::API
   prefix :api
   mount API::V1::Root
   mount API::V1::Messages
-
   # 健康检查
   get :healthz do
     'OK'
@@ -19,5 +18,6 @@ class API::Root < Grape::API
     },
     tags: [
       { name: 'healthz', description: '健康检查' },
+      { name: 'messages', description: '消息' },
     ]
 end
