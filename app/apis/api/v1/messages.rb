@@ -12,16 +12,15 @@ class API::V1::Messages < Grape::API
       requires :title, type: String, desc: '标题'
       requires :kind, type: Integer, desc: '消息类型(normal broadcast warning system)'
       optional :content, type: String, desc: '正文内容'
-      optional :tenant_id, type: String, desc: '站点id'
+      optional :tenant_id, type: String, desc: '站点ID（暂时只有desk使用该属性）'
       optional :redirect_url, type: String, desc: '消息地址'
       optional :extra_data, type: JSON, desc: '其他数据'
-      optional :tenant_id, type: String, desc: '站点ID（暂时只有desk使用该属性）'
       optional :push_platforms, type: Array[String], desc: '推送至第三方平台（目前只支持app）'
     end
     post do
       event_params = params.slice(:kind, :title, :content, :redirect_url, :extra_data)
       service = SendToReceiversService.new(**event_params.symbolize_keys)
-      service.receiver_to(params[:receiver_type], params[:receiver_ids], push_platforms: params[:push_platforms])
+      service.receiver_to(params[:receiver_type], params[:receiver_ids], params[:tenant_id], push_platforms: params[:push_platforms])
       success!
     end
 
