@@ -2,15 +2,14 @@ class AppPushWorker
   include Sidekiq::Worker
   sidekiq_options queue: 'default'
 
-  def perform(event_id, registration_ids)
-    @registration_ids = registration_ids
+  def perform(event_id, options)
     @event = Tmdomain::Notifications.find_event(event_id)
-    push_message_to_app! if @registration_ids.present?
+    push_message_to_app!(options) if options.present?
   end
 
   private
 
-  def push_message_to_app!
-    JpushService.new.push_notification(@registration_ids, @event.content.to_s, @event.title, @event.extra_data)
+  def push_message_to_app!(options)
+    JpushService.new(@event.id).push_notification(options.symbolize_keys)
   end
 end
