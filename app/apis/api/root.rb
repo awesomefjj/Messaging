@@ -4,7 +4,7 @@ class API::Root < Grape::API
   prefix :api
   mount API::V1::Root
   mount API::V1::Messages
-  mount API::V1::PushPlatform
+  mount API::V1::Push
   # 健康检查
   get :healthz do
     'OK'
@@ -20,6 +20,6 @@ class API::Root < Grape::API
     tags: [
       { name: 'healthz', description: '健康检查' },
       { name: 'messages', description: '消息' },
-      { name: 'push_platform', description: '推送消息事件至第三方平台' },
+      { name: 'push', description: '推送消息事件至第三方平台' },
     ]
 end

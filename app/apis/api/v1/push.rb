@@ -1,6 +1,6 @@
-class API::V1::PushPlatform < Grape::API
+class API::V1::Push < Grape::API
   helpers API::CommonHelpers
-  resources :push_platform do
+  resources :push do
     desc '推送至app'
     params do
       requires :event_id, type: Integer, desc: '消息事件ID'
