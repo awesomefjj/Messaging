@@ -1,0 +1,10 @@
+/node_modules
+/log
+/tmp
+/public/assets
+/public/packs
+/build-image.sh
+/Dockerfile
+/coverage
+/config/application.yml
+/config/master.key
