@@ -3,8 +3,6 @@ class API::Root < Grape::API
 
   prefix :api
   mount API::V1::Root
-  mount API::V1::Messages
-  mount API::V1::Push
   # 健康检查
   get :healthz do
     'OK'
