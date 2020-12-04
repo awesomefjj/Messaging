@@ -20,6 +20,7 @@ class API::V1::Messages < Grape::API
       event_params = params.slice(:kind, :title, :content, :redirect_url, :extra_data)
       service = SendToReceiversService.new(**event_params.symbolize_keys)
       service.receiver_to(params[:receiver_type], params[:receiver_ids], params[:tenant_id])
+      # 返回这个事件的数据，方便让调用者将事件推送至app，这哥接口只负责消息持久化，不负责消息推送至app
       success! service.event, with: API::Entities::MessageEvent
     end
 
@@ -63,7 +64,7 @@ class API::V1::Messages < Grape::API
     end
     get :unreads do
       query = Tmdomain::Notifications.unreads(params[:receiver_type], params[:receiver_id], tenant_id: params[:tenant_id])
-      success! query
+      success! query.count
     end
 
     desc '硬删除 N 天前的通知(软删除之后，才能硬删除)'

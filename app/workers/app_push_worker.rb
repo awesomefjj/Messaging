@@ -1,3 +1,4 @@
+# 推送消息至app
 class AppPushWorker
   include Sidekiq::Worker
   sidekiq_options queue: 'default'
