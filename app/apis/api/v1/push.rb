@@ -1,3 +1,8 @@
+# 推送事件至其他平台
+# 这里面的接口的原则是
+# 1. 推送到哪个平台
+# 2. 推送哪个事件（Tmdomain::Notifications::Event）
+# 3. 推送给哪些用户（这里面的所有用户都是基于sso里面的用户做的统一）
 class API::V1::Push < Grape::API
   helpers API::CommonHelpers
   resources :push do

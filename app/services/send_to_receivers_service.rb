@@ -1,3 +1,4 @@
+# 为接收者创建数据
 class SendToReceiversService
   attr_reader :event
   def initialize(kind:, title:, content: nil, redirect_url: nil, extra_data: nil)
