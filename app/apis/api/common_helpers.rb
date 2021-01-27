@@ -11,4 +11,8 @@ module API::CommonHelpers
     result = { code: code, status: 'failed', message: msg.respond_to?(:errors) ? msg.errors.full_messages : msg }
     error! API::Entities::BaseResponse.represent(result, options).as_json, 200
   end
+
+  def not_found!
+    failed!(API::Codes[404], code: 404)
+  end
 end

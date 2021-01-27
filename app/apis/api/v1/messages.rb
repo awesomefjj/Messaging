@@ -1,5 +1,10 @@
 class API::V1::Messages < Grape::API
   helpers API::CommonHelpers
+  helpers API::SharedParams
+
+  notification_kinds = Tmdomain::Notifications.config.kinds.map(&:to_s)
+  notification_statuses = Tmdomain::Notifications::Notification.statuses.keys.map(&:to_s)
+
   resources :messages do
     before do
       params[:receiver_type] = params[:receiver_type].classify if params[:receiver_type].present?
@@ -10,7 +15,7 @@ class API::V1::Messages < Grape::API
       requires :receiver_type, type: String, desc: '接收方类型'
       requires :receiver_ids, type: Array[Integer], desc: '接收方的ID'
       requires :title, type: String, desc: '标题'
-      requires :kind, type: Integer, desc: '消息种类(normal broadcast warning system)'
+      requires :kind, type: String, values: notification_kinds, desc: '消息种类(normal: 正常 broadcast: 广播 warning: 报警 system: 系统)'
       optional :content, type: String, desc: '正文内容'
       optional :tenant_id, type: String, desc: '站点ID（暂时只有desk使用该属性）'
       optional :redirect_url, type: String, desc: '消息地址'
@@ -28,8 +33,8 @@ class API::V1::Messages < Grape::API
     params do
       optional :receiver_type, type: String, desc: '接收方类型'
       optional :receiver_id, type: Integer, desc: '接收方的ID'
-      optional :status, type: Array[Integer], desc: '消息状态(unread, read, deleted)'
-      optional :kind, type: Integer, desc: '消息种类(normal broadcast warning system)'
+      optional :status, type: String, values: notification_statuses, desc: '消息状态(unread, read, deleted)'
+      optional :kind, type: String, values: notification_kinds, desc: '消息种类(normal: 正常 broadcast: 广播 warning: 报警 system: 系统)'
       optional :tenant_id, type: String, desc: '站点ID（暂时只有desk使用该属性）'
       optional :page, type: Integer, desc: '需要显示的页码'
       optional :page_size, type: Integer, desc: '每页显示数量, 默认20'
@@ -41,17 +46,18 @@ class API::V1::Messages < Grape::API
       if message_type = params.delete(:message_type).presence
         query = query.where("extra_data->>'message_type' = ?", message_type.classify)
       end
+      query = wrap_collection(query)
       success! query, with: API::Entities::Message
     end
 
-    desc '读取所有消息'
+    desc '所有消息通知标记为已读'
     params do
       requires :receiver_type, type: String, desc: '接收方类型'
       requires :receiver_id, type: Integer, desc: '接收方的ID'
       optional :tenant_id, type: String, desc: '站点ID（暂时只有desk使用该属性）'
-      optional :kind, type: Integer, desc: '消息种类(normal broadcast warning system)'
+      optional :kind, type: String, values: notification_kinds, desc: '消息种类(normal: 正常 broadcast: 广播 warning: 报警 system: 系统)'
     end
-    get :read_all do
+    put :read_all do
       Tmdomain::Notifications.read_all(params[:tenant_id], params[:receiver_type], params[:receiver_id], kind: params[:kind])
       success!
     end
@@ -63,8 +69,8 @@ class API::V1::Messages < Grape::API
       optional :tenant_id, type: String, desc: '站点ID（暂时只有desk使用该属性）'
     end
     get :unreads do
-      query = Tmdomain::Notifications.unreads(params[:receiver_type], params[:receiver_id], tenant_id: params[:tenant_id])
-      success! query.count
+      unread_count = Tmdomain::Notifications.unreads(params[:receiver_type], params[:receiver_id], tenant_id: params[:tenant_id])
+      success! unread_count
     end
 
     desc '硬删除 N 天前的通知(软删除之后，才能硬删除)'
@@ -83,8 +89,8 @@ class API::V1::Messages < Grape::API
         success! query, with: API::Entities::Message
       end
 
-      desc '读取消息'
-      get :read do
+      desc '消息设置为已读'
+      put :read do
         query = Tmdomain::Notifications.read(params[:id])
         success! query, with: API::Entities::Message
       end

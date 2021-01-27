@@ -1,8 +1,10 @@
 class API::Root < Grape::API
   format :json
-
   prefix :api
+  rescue_from ActiveRecord::RecordNotFound, -> (_e) { not_found! }
+
   mount API::V1::Root
+
   # 健康检查
   get :healthz do
     'OK'
