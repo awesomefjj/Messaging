@@ -1,0 +1,209 @@
+#
+# = 使用说明：
+#
+# 每个项目，需提前在 Gitlab CI 的变量列表中定义一下变量
+#
+# == 全局的变量
+#
+# BUNDLE_GEMS__TANMER__COM: gems.tanmer.com 的登录密码，安装 Gem 时需要
+# KUBECONFIG_BASE64: 通过 k8s 部署时，需要提供的 Token 信息
+#
+# == 需要定义 dev/staging/prod scope 下的变量值
+#
+# ENABLE_BUILD: 是否开启编译功能
+# ENABLE_DEPLOY: 是否开启部署功能
+# K8S_NAMESPACE: 部署到的 Namespace
+# HELM_RELEASE_NAME: Helm/KubeApps 部署的项目名称
+# ENVIRONMENT_URL: 部署的目标网站地址
+# SENTRY_JS_DSN: Sentry JS 监控地址
+#
+image: alpine:latest
+variables:
+  CHART_NAME: "chartmuseum/rails"
+  DEPLOYER_IMAGE: "tanmerk8s/k8s-utils:v2"
+  GIT_SUBMODULE_STRATEGY: recursive
+
+stages:
+  - test
+  - build
+  - deploy
+
+.cache_gems: &cache_gems
+  key: gems
+  paths:
+    - vendor/bundle
+
+.build: &build
+  stage: build
+  image: docker:stable-git
+  interruptible: true
+  variables:
+    DOCKER_DRIVER: overlay2
+  script:
+    - check_variable BUNDLE_GEMS__TANMER__COM 'BUNDLE_GEMS__TANMER__COM must be defined for building Tanmer gems'
+    - login_docker
+    - build_image
+    - publish_image
+
+.deploy: &deploy
+  image: docker:stable-git
+  stage: deploy
+  interruptible: true
+  when: on_success
+  script:
+    - check_variable KUBECONFIG_BASE64 'In order to deploy with helm, you have to define KUBECONFIG_BASE64 from Gitlab CI variables'
+    - check_variable K8S_NAMESPACE 'K8S_NAMESPACE must be defined for deploying, this is a namespace params for Helm'
+    - check_variable HELM_RELEASE_NAME 'HELM_RELEASE_NAME must be defined for deploying, this is Helm relase name which created by Helm or KubeApps'
+    - login_docker
+    - deploy
+
+build:dev:
+  <<: *build
+  environment:
+    name: dev
+  only:
+    refs:
+    - /^sprint\/(\d{6}|\d{8})$/
+    variables:
+    - $ENABLE_BUILD == "y"
+  when: delayed
+  start_in: 30 minutes
+
+deploy:dev:
+  <<: *deploy
+  environment:
+    name: dev
+    url: $ENVIRONMENT_URL
+  only:
+    refs:
+    - /^sprint\/(\d{6}|\d{8})$/
+    variables:
+    - $ENABLE_DEPLOY == "y"
+
+build:staging:
+  <<: *build
+  environment:
+    name: staging
+  only:
+    refs:
+    - master
+    variables:
+    - $ENABLE_BUILD == "y"
+
+deploy:staging:
+  <<: *deploy
+  environment:
+    name: staging
+    url: $ENVIRONMENT_URL
+  only:
+    refs:
+    - master
+    variables:
+    - $ENABLE_DEPLOY == "y"
+
+build:prod:
+  <<: *build
+  environment:
+    name: prod
+  only:
+    refs:
+    - /^v-\d+\.\d+\.\d/
+    variables:
+    - $ENABLE_BUILD == "y"
+
+deploy:prod:
+  <<: *deploy
+  environment:
+    name: prod
+    url: $ENVIRONMENT_URL
+  only:
+    refs:
+    - /^v-\d+\.\d+\.\d/
+    variables:
+    - $ENABLE_DEPLOY == "y"
+
+before_script:
+  - |
+    # production re-use docker image from staging
+    if [[ "${CI_ENVIRONMENT_SLUG}" == "prod" ]]; then
+      export CI_APPLICATION_REPOSITORY=${CI_REGISTRY_IMAGE}/release
+      export CI_APPLICATION_TAG=${CI_COMMIT_TAG}-${CI_COMMIT_SHORT_SHA}
+    else
+      export CI_APPLICATION_REPOSITORY=${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_SLUG}
+      export CI_APPLICATION_TAG=${CI_COMMIT_SHA}
+    fi
+
+    export CI_CONTAINER_NAME=ci_job_build_${CI_JOB_ID}
+
+    function build_image() {
+      echo "Building Dockerfile-based application..."
+      docker build \
+        --build-arg BUNDLE_GEMS__TANMER__COM=${BUNDLE_GEMS__TANMER__COM} \
+        --build-arg RELEASE_BRANCH=${CI_COMMIT_REF_SLUG} \
+        --build-arg RELEASE_COMMIT=${CI_COMMIT_SHORT_SHA} \
+        --build-arg SENTRY_JS_DSN=${SENTRY_JS_DSN} \
+        -t "${CI_APPLICATION_REPOSITORY}:${CI_APPLICATION_TAG}" .
+    }
+
+    function login_docker() {
+      if [[ -n "${CI_REGISTRY_USER}" ]]; then
+        echo "Logging to GitLab Container Registry with CI credentials..."
+        echo "${CI_REGISTRY_PASSWORD}" | docker login -u "${CI_REGISTRY_USER}" --password-stdin "${CI_REGISTRY}"
+        echo ""
+      fi
+    }
+
+    function publish_image() {
+      image="${CI_APPLICATION_REPOSITORY}:${CI_APPLICATION_TAG}"
+      echo "Pushing to GitLab Container Registry..."
+      echo "Image: ${image}"
+      docker push "${image}"
+      echo ""
+    }
+
+    function get_value_of(){
+        local variable_name=$1
+        local variable_value=""
+        if set | grep -q "^$variable_name="; then
+          eval variable_value="\$$variable_name"
+        fi
+        echo "$variable_value"
+    }
+
+    function check_variable() {
+      local msg=$2
+      local value=$(get_value_of $1)
+      if [ -z "${value}" ]; then
+        echo $msg
+        false
+      else
+        true
+      fi
+    }
+
+    function deploy() {
+      local imagePrefix=""
+      if [ ${CHART_NAME} != "chartmuseum/rails" ]; then
+        imagePrefix="rails."
+      fi
+      echo
+      echo "   Deployer Image: ${DEPLOYER_IMAGE}"
+      echo "       Chart Name: ${CHART_NAME}"
+      echo "    K8S Namespace: ${K8S_NAMESPACE}"
+      echo "Helm Release Name: ${HELM_RELEASE_NAME}"
+      echo "   App Image Repo: ${CI_APPLICATION_REPOSITORY}"
+      echo "    App Image Tag: ${CI_APPLICATION_TAG}"
+      echo
+      docker run \
+        --rm \
+        --env="KUBECONFIG_BASE64=${KUBECONFIG_BASE64}" \
+        --env=CHARTMUSEUM=1 \
+        ${DEPLOYER_IMAGE} \
+        helm upgrade ${HELM_RELEASE_NAME} \
+        --namespace ${K8S_NAMESPACE} \
+        --timeout 30m \
+        --reuse-values \
+        --set ${imagePrefix}image.repository="${CI_APPLICATION_REPOSITORY}" \
+        --set ${imagePrefix}image.tag="${CI_APPLICATION_TAG}" \
+        ${CHART_NAME}
+    }
