@@ -3,7 +3,7 @@
 # 1. 推送到哪个平台
 # 2. 推送哪个事件（Tmdomain::Notifications::Event）
 # 3. 推送给哪些用户（这里面的所有用户都是基于sso里面的用户做的统一）
-class API::V2::Push < Grape::API
+class API::V1::Push < Grape::API
   helpers API::CommonHelpers
   resources :push do
     desc '推送至app'
