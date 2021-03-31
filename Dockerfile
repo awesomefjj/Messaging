@@ -5,7 +5,7 @@ LABEL maintainer="xiaohui@tanmer.com"
 
 WORKDIR /app
 RUN mkdir -p /app \
-    && sed -i 's!http://dl-cdn.alpinelinux.org!https://mirrors.tuna.tsinghua.edu.cn/!' /etc/apk/repositories \
+    && sed -i 's!http://dl-cdn.alpinelinux.org!https://mirrors.aliyun.com/!' /etc/apk/repositories \
     && apk add tzdata postgresql-dev ruby-nokogiri ruby-ffi \
        postgresql-dev libxml2-dev libxslt-dev nodejs \
     && apk add --virtual rails-build-deps \
