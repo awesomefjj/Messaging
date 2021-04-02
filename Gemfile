@@ -28,30 +28,43 @@ gem 'jbuilder', '~> 2.7'
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.4.2', require: false
 
+source 'https://gems.tanmer.com' do
+  gem 'tmdomain-notifications', '0.5.4'
+  gem 'tmlib-acts_as_status', '0.1.0'
+  gem 'tmlib-extensions', '0.1.3'
+end
+gem 'dotenv-rails', '~> 2.7', '>= 2.7.6'
+gem 'faraday', '~> 1.1'
+gem 'jpush', '~> 4.0', '>= 4.0.11'
+gem 'kaminari', '~> 1.2', '>= 1.2.1'
+gem 'redis-namespace', '~> 1.8', '>= 1.8.1'
+gem 'sentry-raven', '~> 3.1', '>= 3.1.2'
+gem 'sidekiq', '~> 6.1', '>= 6.1.2'
+
 # api
 gem 'grape', '~> 1.2', '>= 1.2.5'
-gem 'grape-route-helpers', '~> 2.1'
 gem 'grape-entity', '~> 0.7.1'
+gem 'grape_logging', '~> 1.8', '>= 1.8.3'
+gem 'grape-route-helpers', '~> 2.1'
 gem 'grape-swagger', '~> 0.34.2'
 gem 'grape-swagger-entity', '~> 0.3.4'
 gem 'grape-swagger-rails', '~> 0.3.1'
-gem 'grape_logging', '~> 1.8', '>= 1.8.3'
-gem 'rack-cors', :require => 'rack/cors'
+gem 'rack-cors', require: 'rack/cors'
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
-  gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
+  gem 'byebug', platforms: %i[mri mingw x64_mingw]
 end
 
 group :development do
   # Access an interactive console on exception pages or by calling 'console' anywhere in the code.
-  gem 'web-console', '>= 3.3.0'
   gem 'listen'
+  gem 'web-console', '>= 3.3.0'
   # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
-  gem 'spring'
-  gem 'spring-watcher-listen', '~> 2.0.0'
   gem 'annotate', '~> 3.1', '>= 3.1.1'
   gem 'pry-rails', '~> 0.3.9'
+  gem 'spring'
+  gem 'spring-watcher-listen', '~> 2.0.0'
 end
 
 group :test do
@@ -61,17 +74,6 @@ group :test do
   # Easy installation and use of web drivers to run system tests with browsers
   gem 'webdrivers'
 end
-source 'https://gems.tanmer.com' do
-  gem 'tmdomain-notifications', '0.5.4'
-  gem 'tmlib-extensions', '0.1.3'
-  gem 'tmlib-acts_as_status', '0.1.0'
-end
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
-
-gem 'faraday', '~> 1.1'
-gem 'figaro', '~> 1.2'
-gem 'jpush', '~> 4.0', '>= 4.0.11'
-gem 'kaminari', '~> 1.2', '>= 1.2.1'
-gem 'sidekiq', '~> 6.1', '>= 6.1.2'
+# gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]

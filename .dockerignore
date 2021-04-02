@@ -8,3 +8,7 @@
 /coverage
 /config/application.yml
 /config/master.key
+
+
+# Ignore devspace.yaml file to prevent image rebuilding after config changes
+devspace.yaml

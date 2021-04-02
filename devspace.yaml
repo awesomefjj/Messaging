@@ -1,0 +1,121 @@
+version: v1beta9
+vars:
+- name: PROJECT_NAME
+  question: "当前部署到哪个项目:"
+  source: input
+  options:
+  - baklib
+  - tamigos
+- name: IMAGE_NAME
+  source: command
+  commands:
+  - command: './deploy/get-image-name.sh'
+    os: linux,darwin
+- name: DEPLOY_ENV
+  question: "当前部署到哪个环境:"
+  source: input
+  options:
+  - dev
+  - staging
+  - production
+  default: dev
+images:
+  app:
+    image: docker.corp.tanmer.com/tanmer_paas/apps/messaging/${IMAGE_NAME}
+    tags:
+    - ${DEVSPACE_GIT_COMMIT}
+    entrypoint:
+    - rails
+    - server
+    build:
+      docker:
+        args:
+        - "--build-arg"
+        - "RELEASE_COMMIT=${DEVSPACE_GIT_COMMIT}"
+        - "--build-arg"
+        - "RELEASE_BRANCH=${DEVSPACE_GIT_BRANCH}'"
+    preferSyncOverRebuild: true
+    injectRestartHelper: true
+    appendDockerfileInstructions:
+    - USER root
+deployments:
+- name: messaging
+  helm:
+    componentChart: true
+    values:
+      rollingUpdate:
+        enabled: true
+        maxSurge: "100%"
+        maxUnavailable: "50%"
+      containers:
+      - image: docker.corp.tanmer.com/tanmer_paas/apps/messaging/${IMAGE_NAME}
+        name: rails
+        env:
+        - name: RAILS_SERVE_STATIC_FILES
+          value: "yes"
+        envFrom:
+        - configMapRef:
+            name: messaging-rails-config
+        readinessProbe:
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          httpGet:
+            path: /healthz
+            port: 3000
+      service:
+        ports:
+        - port: 3000
+- name: messaging-sidekiq
+  helm:
+    componentChart: true
+    values:
+      rollingUpdate:
+        enabled: true
+        maxSurge: "100%"
+        maxUnavailable: "50%"
+      containers:
+      - image: docker.corp.tanmer.com/tanmer_paas/apps/messaging/${IMAGE_NAME}
+        name: sidekiq
+        envFrom:
+        - configMapRef:
+            name: messaging-rails-config
+        command:
+        - sidekiq
+        - -c
+        - "5"
+dev:
+  ports:
+  - labelSelector:
+      app.kubernetes.io/component: messaging
+    forward:
+    - port: 30000
+      remotePort: 3000
+  open:
+  - url: http://localhost:30000
+  sync:
+  - labelSelector:
+      app.kubernetes.io/component: messaging
+    excludePaths:
+    - '**'
+    - '!/app/'
+    - '!/config/'
+    - 'config/application.yml'
+    - '!/lib/'
+    - '!/Gemfile*'
+  interactive:
+    defaultEnabled: true
+    terminal:
+      labelSelector:
+        app.kubernetes.io/component: messaging
+profiles:
+- name: production
+  description: ""
+  patches:
+  - op: remove
+    path: images.app.appendDockerfileInstructions
+- name: staging
+- name: dev
+commands:
+- name: create-rails-config
+  description: "创建变量配置"
+  command: "kubectl --context=${DEVSPACE_CONTEXT} --namespace=${DEVSPACE_NAMESPACE} create configmap messaging-rails-config --from-env-file=.env.${PROJECT_NAME}.${DEPLOY_ENV}"

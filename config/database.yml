@@ -11,6 +11,10 @@ development:
 test:
   <<: *default
   database: <%= ENV.fetch("DB_DATABASE") %>_test
-production:
+production: &production
   <<: *default
   database: <%= ENV.fetch("DB_DATABASE") %>
+staging:
+  <<: *production
+dev:
+  <<: *production
