@@ -6,7 +6,7 @@ WORKDIR /app
 RUN mkdir -p /app \
     && sed -i 's!https://dl-cdn.alpinelinux.org!https://mirrors.aliyun.com!' /etc/apk/repositories \
     && apk add tzdata postgresql-dev ruby-nokogiri ruby-ffi \
-       postgresql-dev libxml2-dev libxslt-dev nodejs-current \
+       postgresql-dev libxml2-dev libxslt-dev nodejs \
     && apk add --virtual rails-build-deps \
        build-base ruby-dev libc-dev linux-headers \
        git yarn python2 \
@@ -41,12 +41,11 @@ COPY --from=node_modules /app/node_modules /app/node_modules/
 COPY --from=node_modules /yarn-cache /yarn-cache
 
 # 提供给 sentry brower 的参数: dsn, release
-ARG RELEASE_COMMIT
 ARG SENTRY_JS_DSN
-ENV RELEASE_COMMIT=${RELEASE_COMMIT}
 ENV SENTRY_JS_DSN=${SENTRY_JS_DSN}
 
 RUN git checkout -- . \
+    && export RELEASE_COMMIT=$(git rev-parse --short HEAD) \
     && rm -f package-lock.json \
     && RAILS_ENV=production \
        SECRET_KEY_BASE=xxx \
@@ -62,13 +61,10 @@ COPY --from=assets /usr/local/bundle /usr/local/bundle
 COPY --from=assets /app/public/assets /app/public/assets
 COPY .git .git
 RUN git checkout -- . \
+    && git rev-parse --short HEAD > RELEASE_COMMIT \
+    && git symbolic-ref -q --short HEAD || true > RELEASE_BRANCH \
     && rm -rf .git vendor/cache \
     && apk del rails-build-deps
-
-ARG RELEASE_BRANCH
-ARG RELEASE_COMMIT
-ENV RELEASE_BRANCH=${RELEASE_BRANCH}
-ENV RELEASE_COMMIT=${RELEASE_COMMIT}
 
 RUN addgroup -S app && adduser -S -G app app && chown app:app -R /app
 USER app

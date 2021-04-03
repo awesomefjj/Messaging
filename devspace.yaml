@@ -27,13 +27,13 @@ images:
     entrypoint:
     - rails
     - server
-    build:
-      docker:
-        args:
-        - "--build-arg"
-        - "RELEASE_COMMIT=${DEVSPACE_GIT_COMMIT}"
-        - "--build-arg"
-        - "RELEASE_BRANCH=${DEVSPACE_GIT_BRANCH}'"
+    # build:
+    #   docker:
+    #     args:
+    #     - "--build-arg"
+    #     - "RELEASE_COMMIT=${DEVSPACE_GIT_COMMIT}"
+    #     - "--build-arg"
+    #     - "RELEASE_BRANCH=${DEVSPACE_GIT_BRANCH}'"
     preferSyncOverRebuild: true
     injectRestartHelper: true
     appendDockerfileInstructions:
@@ -60,7 +60,12 @@ deployments:
           initialDelaySeconds: 10
           periodSeconds: 5
           httpGet:
-            path: /healthz
+            path: /_healthz
+            port: 3000
+        livenessProbe:
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          tcpSocket:
             port: 3000
       service:
         ports:
