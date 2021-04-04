@@ -10,7 +10,9 @@ RUN mkdir -p /app \
     && gem install bundler \
     && bundle config mirror.https://rubygems.org https://gems.ruby-china.com \
     && bundle config force_ruby_platform true \
-    && bundle config set without 'development test'
+    && bundle config set without 'development test' \
+    && addgroup -S app \
+    && adduser -S -G app app
 
 # ============= 编译环境 ===============
 FROM runtime as build
@@ -46,7 +48,7 @@ RUN git checkout -- . \
        DATABASE_ADAPTER=nulldb \
        bundle exec rails assets:precompile \
     && rm -rf .git vendor/cache node_modules deploy docker\
-    && addgroup -S app && adduser -S -G app app && chown app:app -R /app
+    && chown app:app -R /app
 
 # ======== 最终运行环境 =======
 FROM runtime as rails

@@ -5,7 +5,9 @@ redis_conn = proc {
   )
 }
 
-pool = ConnectionPool.new(size: ENV.fetch('REDIS_POOLS', 5).to_i, &redis_conn)
+size = ENV.fetch('REDIS_POOLS', 5).to_i
+size = [size, Sidekiq.options[:concurrency] + 2].max
+pool = ConnectionPool.new(size: size, &redis_conn)
 Redis.current = redis_conn.call
 
 Sidekiq.configure_client do |config|
