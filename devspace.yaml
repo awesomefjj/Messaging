@@ -75,6 +75,15 @@ deployments:
       service:
         ports:
         - port: 3000
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: role
+                operator: In
+                values:
+                - web
 - name: messaging-sidekiq
   helm:
     componentChart: true
@@ -93,6 +102,15 @@ deployments:
         - bin/sidekiq
         - -c
         - "5"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: role
+                operator: In
+                values:
+                - worker
 dev:
   ports:
   - labelSelector:
