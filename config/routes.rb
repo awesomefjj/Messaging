@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  root 'welcome#index'
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
   get :_healthz, to: ->(_req) {
     # 检查 redis
@@ -10,4 +11,7 @@ Rails.application.routes.draw do
 
   mount API::Root => '/'
   mount GrapeSwaggerRails::Engine => '/api/tm-docs'
+
+  resources :notifications
+  resources :notification_events
 end
