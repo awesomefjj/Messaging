@@ -11,7 +11,9 @@ Rails.application.routes.draw do
 
   mount API::Root => '/'
   mount GrapeSwaggerRails::Engine => '/api/tm-docs'
+  get "sign_up", to: "sendmessage#new"
+  post "sign_up", to: "sendmessage#create"
+  
 
-  resources :notifications
-  resources :notification_events
+
 end

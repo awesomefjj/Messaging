@@ -1,0 +1,3 @@
+class Notification_EventsController < ApplicationController
+
+end
